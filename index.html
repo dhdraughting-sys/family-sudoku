@@ -90,6 +90,27 @@
   .player-chip .dot{
     width:8px; height:8px; border-radius:50%; background: var(--accent-2);
   }
+  .header-actions{
+    display:flex; align-items:center; gap:8px;
+  }
+  .share-btn{
+    display:flex; align-items:center; justify-content:center;
+    width: 34px; height: 34px;
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+  }
+  .share-btn svg{ width:16px; height:16px; stroke: var(--accent); }
+  .share-toast{
+    position: fixed; left:50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--panel); border: 1px solid var(--accent);
+    color: var(--paper); font-family: var(--font-mono); font-size: 12.5px;
+    padding: 10px 16px; border-radius: 999px; z-index: 60;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  }
+  .share-toast.show{ opacity: 1; }
 
   .status-row{
     display:flex; justify-content:space-between; align-items:center;
@@ -328,7 +349,12 @@
       <span class="mark">FAMILY TABLE</span>
       <h1>Sudoku</h1>
     </div>
-    <div class="player-chip" id="playerChip"><span class="dot"></span><span id="playerName">Player</span></div>
+    <div class="header-actions">
+      <button class="share-btn" id="shareBtn" aria-label="Share">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 3.9"/><path d="m15.4 6.6-6.8 3.9"/></svg>
+      </button>
+      <div class="player-chip" id="playerChip"><span class="dot"></span><span id="playerName">Player</span></div>
+    </div>
   </header>
 
   <button class="install-btn hidden" id="installBtn">
@@ -396,6 +422,8 @@
     </div>
   </div>
 </div>
+
+<div class="share-toast" id="shareToast">Link copied</div>
 
 <div class="overlay" id="nameOverlay">
   <div class="modal">
@@ -832,6 +860,35 @@
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
+
+  // ---------- Share ----------
+  const shareBtn = document.getElementById('shareBtn');
+  const shareToast = document.getElementById('shareToast');
+  function appUrl(){
+    return window.location.origin + window.location.pathname.replace(/index\.html$/,'');
+  }
+  function showToast(msg){
+    shareToast.textContent = msg;
+    shareToast.classList.add('show');
+    setTimeout(()=> shareToast.classList.remove('show'), 2200);
+  }
+  shareBtn.addEventListener('click', async ()=>{
+    const url = appUrl();
+    const text = 'Join our family Sudoku — same puzzle, shared leaderboard.';
+    if(navigator.share){
+      try{ await navigator.share({ title:'Family Sudoku', text, url }); }
+      catch(e){ /* user cancelled, ignore */ }
+      return;
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      try{
+        await navigator.clipboard.writeText(text + ' ' + url);
+        showToast('Link copied — paste it into WhatsApp');
+        return;
+      }catch(e){ /* fall through */ }
+    }
+    window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + url), '_blank');
+  });
 
   loadPlayerName();
 
